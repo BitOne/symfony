@@ -28,7 +28,8 @@ class ApcuAdapterTest extends AdapterTestCase
             $this->markTestSkipped('APCu extension is required.');
         }
         if ('cli' === PHP_SAPI && !ini_get('apc.enable_cli')) {
-            if ('testWithCliSapi' !== $this->getName()) {
+            if ('testWithCliSapi' !== $this->getName() &&
+                'testIsNotSupportedWithCliSapiWithoutApcEnableCli' !== $this->getName()) {
                 $this->markTestSkipped('APCu extension is required.');
             }
         }
@@ -36,7 +37,11 @@ class ApcuAdapterTest extends AdapterTestCase
             $this->markTestSkipped('Fails transiently on Windows.');
         }
 
-        return new ApcuAdapter(str_replace('\\', '.', __CLASS__), $defaultLifetime);
+        if ('testIsNotSupportedWithCliSapiWithoutApcEnableCli' !== $this->getName()) {
+            return new ApcuAdapter(str_replace('\\', '.', __CLASS__), $defaultLifetime);
+        } else {
+            return null;
+        }
     }
 
     public function testUnserializable()
@@ -119,6 +124,24 @@ class ApcuAdapterTest extends AdapterTestCase
             $this->assertFalse($isCalled);
         } finally {
             restore_error_handler();
+        }
+    }
+
+    public function testIsSupportedWithCliSapiAndApcEnableCli()
+    {
+        if ('cli' === PHP_SAPI && !ini_get('apc.enable_cli')) {
+            $this->markTestSkipped('Needs apc.enable_cli at 1.');
+        } else {
+            $this->assertTrue(ApcuAdapter::isSupported());
+        }
+    }
+
+    public function testIsNotSupportedWithCliSapiWithoutApcEnableCli()
+    {
+        if ('cli' === PHP_SAPI && ini_get('apc.enable_cli')) {
+            $this->markTestSkipped('Needs apc.enable_cli at 0.');
+        } else {
+            $this->assertFalse(ApcuAdapter::isSupported());
         }
     }
 }
